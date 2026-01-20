@@ -65,7 +65,7 @@ function App() {
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         setStatus(ProcessingStatus.ERROR);
-        setErrorMsg(err.message);
+        setErrorMsg(err.message || "Transcription failed. Please check your API key.");
       }
     }
   };
@@ -84,7 +84,7 @@ function App() {
       setStatus(ProcessingStatus.COMPLETED);
     } catch (err: any) {
       setStatus(ProcessingStatus.ERROR);
-      setErrorMsg(err.message);
+      setErrorMsg(err.message || "Audio dubbing failed.");
     }
   };
 
@@ -99,12 +99,14 @@ function App() {
       const a = document.createElement('a');
       a.href = url;
       a.download = "aha_studio_export.webm";
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setStatus(ProcessingStatus.COMPLETED);
     } catch (err: any) {
       setStatus(ProcessingStatus.ERROR);
-      setErrorMsg(err.message);
+      setErrorMsg(err.message || "Video rendering failed.");
     }
   };
 
@@ -113,17 +115,6 @@ function App() {
                        status === ProcessingStatus.TRANSLATING ||
                        status === ProcessingStatus.GENERATING_SPEECH ||
                        status === ProcessingStatus.RENDERING;
-
-  const getProcessingMessage = () => {
-    switch (status) {
-      case ProcessingStatus.EXTRACTING_AUDIO: return "Deconstructing audio waves...";
-      case ProcessingStatus.TRANSCRIBING: return "AHA Intelligence is listening...";
-      case ProcessingStatus.TRANSLATING: return "Bridging linguistic gaps...";
-      case ProcessingStatus.GENERATING_SPEECH: return "Synthesizing AI voiceover...";
-      case ProcessingStatus.RENDERING: return `Compositing visual layers: ${Math.round(renderingProgress * 100)}%`;
-      default: return "Processing...";
-    }
-  };
 
   return (
     <div className="flex flex-col h-screen bg-[#020617] text-slate-100 selection:bg-indigo-500/30">
@@ -136,12 +127,12 @@ function App() {
             <div className="absolute inset-0 bg-indigo-500/30 blur-[100px] animate-pulse rounded-full" />
             <Loader2 className="w-16 h-16 text-indigo-500 animate-spin" />
           </div>
-          <h2 className="text-2xl font-black tracking-tighter mb-2">AI ENGINE ACTIVE</h2>
+          <h2 className="text-2xl font-black tracking-tighter mb-2 uppercase">AI Engine Active</h2>
           <p className="text-slate-400 text-sm font-medium mb-8">
             {status === ProcessingStatus.RENDERING ? `Rendering Masterpiece: ${Math.round(renderingProgress * 100)}%` : 'Orchestrating digital content...'}
           </p>
-          <button onClick={() => processAbortControllerRef.current?.abort()} className="px-6 py-2 border border-white/10 hover:bg-white/5 rounded-full text-xs font-bold transition-all">
-            STOP EXECUTION
+          <button onClick={() => processAbortControllerRef.current?.abort()} className="px-6 py-2 border border-white/10 hover:bg-white/5 rounded-full text-xs font-bold transition-all uppercase tracking-widest">
+            Stop Execution
           </button>
         </div>
       )}
@@ -156,9 +147,9 @@ function App() {
         </div>
         <div className="flex items-center space-x-4">
           <input type="file" ref={videoInputRef} onChange={handleFileUpload} accept="video/*" className="hidden" />
-          <button onClick={() => videoInputRef.current?.click()} className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-full text-xs font-black transition-all shadow-xl shadow-indigo-500/20">
+          <button onClick={() => videoInputRef.current?.click()} className="flex items-center space-x-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-full text-xs font-black transition-all shadow-xl shadow-indigo-500/20 uppercase tracking-widest">
             <Upload size={14} />
-            <span>IMPORT VIDEO</span>
+            <span>Import Video</span>
           </button>
         </div>
       </nav>
@@ -172,13 +163,13 @@ function App() {
             <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
               <button onClick={handleTranscribe} disabled={!videoFile || isProcessing} className="p-6 bg-slate-900/50 border border-white/5 rounded-3xl hover:bg-slate-800 transition-all text-left disabled:opacity-30">
                 <Wand2 className="text-indigo-400 mb-4" />
-                <h4 className="font-bold text-sm">TRANSCRIBE</h4>
+                <h4 className="font-bold text-sm uppercase">Transcribe</h4>
                 <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Speech Recognition</p>
               </button>
 
               <div className="p-6 bg-slate-900/50 border border-white/5 rounded-3xl hover:bg-slate-800 transition-all text-left group">
                 <Languages className="text-purple-400 mb-4" />
-                <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)} className="bg-transparent text-sm font-bold border-none outline-none block w-full">
+                <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)} className="bg-transparent text-sm font-bold border-none outline-none block w-full appearance-none">
                   {SUPPORTED_LANGUAGES.map(l => <option key={l.code} value={l.code} className="bg-slate-900">{l.name}</option>)}
                 </select>
                 <button onClick={() => translateCaptions(captions, selectedLang).then(setCaptions)} disabled={captions.length === 0 || isProcessing} className="text-[10px] text-purple-400 mt-2 font-black group-hover:underline uppercase tracking-widest">Execute translation</button>
@@ -186,13 +177,13 @@ function App() {
 
               <button onClick={handleDub} disabled={captions.length === 0 || isProcessing} className="p-6 bg-slate-900/50 border border-white/5 rounded-3xl hover:bg-slate-800 transition-all text-left disabled:opacity-30">
                 <Mic className="text-pink-400 mb-4" />
-                <h4 className="font-bold text-sm">AI DUB</h4>
+                <h4 className="font-bold text-sm uppercase">AI Dub</h4>
                 <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Voice Synthesis</p>
               </button>
 
               <button onClick={handleExport} disabled={captions.length === 0 || isProcessing} className="p-6 bg-indigo-600/10 border border-indigo-500/20 rounded-3xl hover:bg-indigo-600/20 transition-all text-left disabled:opacity-30 group">
                 <Film className="text-indigo-400 mb-4" />
-                <h4 className="font-bold text-sm text-indigo-400">EXPORT</h4>
+                <h4 className="font-bold text-sm text-indigo-400 uppercase">Export</h4>
                 <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold group-hover:text-indigo-300">Finalize Assets</p>
               </button>
             </div>
@@ -217,7 +208,7 @@ function App() {
         <aside className="w-96 border-l border-white/5 glass flex flex-col">
           <div className="p-6 border-b border-white/5 flex items-center space-x-3">
             <LayoutPanelLeft size={16} className="text-slate-500" />
-            <h3 className="text-sm font-black tracking-tighter">TRANSCRIPT STACK</h3>
+            <h3 className="text-sm font-black tracking-tighter uppercase">Transcript Stack</h3>
           </div>
           <div className="flex-1 overflow-hidden">
             <CaptionEditor 

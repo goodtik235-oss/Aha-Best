@@ -20,8 +20,12 @@
         .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); }
     </style>
     <script>
-      // Shim for process.env to prevent crashes on static deployments
-      window.process = window.process || { env: {} };
+      // Global shim for process.env used by SDKs and libraries
+      window.process = { 
+        env: { 
+          NODE_ENV: 'production'
+        } 
+      };
     </script>
     <script type="importmap">
 {
@@ -40,5 +44,7 @@
 </head>
 <body class="text-slate-100 antialiased overflow-hidden">
     <div id="root"></div>
+    <!-- Explicit entry point for the React application -->
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>
