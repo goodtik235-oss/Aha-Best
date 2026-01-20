@@ -1,10 +1,10 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { Caption } from "../types";
+import { Caption } from "../types.ts";
 
 const getAIClient = () => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API_KEY missing");
+  if (!apiKey) throw new Error("Gemini API Key missing (process.env.API_KEY)");
   return new GoogleGenAI({ apiKey });
 };
 

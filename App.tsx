@@ -1,13 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Languages, Download, Wand2, Loader2, AlertTriangle, Film, Mic, Square, Volume2, Sparkles, LayoutPanelLeft } from 'lucide-react';
-import VideoPlayer from './components/VideoPlayer';
-import CaptionEditor from './components/CaptionEditor';
-import StatsChart from './components/StatsChart';
-import { Caption, ProcessingStatus, SUPPORTED_LANGUAGES } from './types';
-import { extractAudioFromVideo, base64ToWavBlob } from './services/audioUtils';
-import { transcribeAudio, translateCaptions, generateSpeech } from './services/geminiService';
-import { renderVideoWithCaptions } from './services/videoRenderer';
+import VideoPlayer from './components/VideoPlayer.tsx';
+import CaptionEditor from './components/CaptionEditor.tsx';
+import StatsChart from './components/StatsChart.tsx';
+import { Caption, ProcessingStatus, SUPPORTED_LANGUAGES } from './types.ts';
+import { extractAudioFromVideo, base64ToWavBlob } from './services/audioUtils.ts';
+import { transcribeAudio, translateCaptions, generateSpeech } from './services/geminiService.ts';
+import { renderVideoWithCaptions } from './services/videoRenderer.ts';
 
 function App() {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
@@ -108,6 +108,23 @@ function App() {
     }
   };
 
+  const isProcessing = status === ProcessingStatus.EXTRACTING_AUDIO || 
+                       status === ProcessingStatus.TRANSCRIBING || 
+                       status === ProcessingStatus.TRANSLATING ||
+                       status === ProcessingStatus.GENERATING_SPEECH ||
+                       status === ProcessingStatus.RENDERING;
+
+  const getProcessingMessage = () => {
+    switch (status) {
+      case ProcessingStatus.EXTRACTING_AUDIO: return "Deconstructing audio waves...";
+      case ProcessingStatus.TRANSCRIBING: return "AHA Intelligence is listening...";
+      case ProcessingStatus.TRANSLATING: return "Bridging linguistic gaps...";
+      case ProcessingStatus.GENERATING_SPEECH: return "Synthesizing AI voiceover...";
+      case ProcessingStatus.RENDERING: return `Compositing visual layers: ${Math.round(renderingProgress * 100)}%`;
+      default: return "Processing...";
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-[#020617] text-slate-100 selection:bg-indigo-500/30">
       {dubbedAudioUrl && <audio ref={dubPreviewAudioRef} src={dubbedAudioUrl} onEnded={() => setIsDubPreviewPlaying(false)} className="hidden" />}
@@ -153,7 +170,7 @@ function App() {
             <VideoPlayer src={videoSrc} captions={captions} onTimeUpdate={setCurrentTime} />
             
             <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <button onClick={handleTranscribe} disabled={!videoFile} className="p-6 bg-slate-900/50 border border-white/5 rounded-3xl hover:bg-slate-800 transition-all text-left disabled:opacity-30">
+              <button onClick={handleTranscribe} disabled={!videoFile || isProcessing} className="p-6 bg-slate-900/50 border border-white/5 rounded-3xl hover:bg-slate-800 transition-all text-left disabled:opacity-30">
                 <Wand2 className="text-indigo-400 mb-4" />
                 <h4 className="font-bold text-sm">TRANSCRIBE</h4>
                 <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Speech Recognition</p>
@@ -164,16 +181,16 @@ function App() {
                 <select value={selectedLang} onChange={(e) => setSelectedLang(e.target.value)} className="bg-transparent text-sm font-bold border-none outline-none block w-full">
                   {SUPPORTED_LANGUAGES.map(l => <option key={l.code} value={l.code} className="bg-slate-900">{l.name}</option>)}
                 </select>
-                <button onClick={() => translateCaptions(captions, selectedLang).then(setCaptions)} disabled={captions.length === 0} className="text-[10px] text-purple-400 mt-2 font-black group-hover:underline uppercase tracking-widest">Execute translation</button>
+                <button onClick={() => translateCaptions(captions, selectedLang).then(setCaptions)} disabled={captions.length === 0 || isProcessing} className="text-[10px] text-purple-400 mt-2 font-black group-hover:underline uppercase tracking-widest">Execute translation</button>
               </div>
 
-              <button onClick={handleDub} disabled={captions.length === 0} className="p-6 bg-slate-900/50 border border-white/5 rounded-3xl hover:bg-slate-800 transition-all text-left disabled:opacity-30">
+              <button onClick={handleDub} disabled={captions.length === 0 || isProcessing} className="p-6 bg-slate-900/50 border border-white/5 rounded-3xl hover:bg-slate-800 transition-all text-left disabled:opacity-30">
                 <Mic className="text-pink-400 mb-4" />
                 <h4 className="font-bold text-sm">AI DUB</h4>
                 <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Voice Synthesis</p>
               </button>
 
-              <button onClick={handleExport} disabled={captions.length === 0} className="p-6 bg-indigo-600/10 border border-indigo-500/20 rounded-3xl hover:bg-indigo-600/20 transition-all text-left disabled:opacity-30 group">
+              <button onClick={handleExport} disabled={captions.length === 0 || isProcessing} className="p-6 bg-indigo-600/10 border border-indigo-500/20 rounded-3xl hover:bg-indigo-600/20 transition-all text-left disabled:opacity-30 group">
                 <Film className="text-indigo-400 mb-4" />
                 <h4 className="font-bold text-sm text-indigo-400">EXPORT</h4>
                 <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold group-hover:text-indigo-300">Finalize Assets</p>

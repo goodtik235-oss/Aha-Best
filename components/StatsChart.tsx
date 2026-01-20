@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Caption } from '../types';
+import { Caption } from '../types.ts';
 import { Activity } from 'lucide-react';
 
 interface StatsChartProps {

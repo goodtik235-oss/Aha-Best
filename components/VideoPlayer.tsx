@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Caption } from '../types';
+import { Caption } from '../types.ts';
 import { Play, Pause, Maximize, Volume2, VolumeX } from 'lucide-react';
 
 interface VideoPlayerProps {

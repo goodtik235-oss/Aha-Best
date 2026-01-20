@@ -1,5 +1,5 @@
 
-import { Caption } from "../types";
+import { Caption } from "../types.ts";
 
 /**
  * Renders video with captions to a blob using Canvas and MediaRecorder

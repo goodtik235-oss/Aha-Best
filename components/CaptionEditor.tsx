@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Caption } from '../types';
+import { Caption } from '../types.ts';
 import { Edit2, PlayCircle, Clock } from 'lucide-react';
 
 interface CaptionEditorProps {
