@@ -13,13 +13,26 @@ export async function renderVideoWithCaptions(
 ): Promise<Blob> {
   return new Promise(async (resolve, reject) => {
     const video = document.createElement('video');
-    video.src = videoSrc;
-    video.crossOrigin = "anonymous";
-    video.muted = true;
     
-    await video.play(); // Pre-warm
-    video.pause();
-    video.currentTime = 0;
+    // Crucial: Only set crossOrigin if it's not a blob URL
+    if (!videoSrc.startsWith('blob:')) {
+      video.crossOrigin = "anonymous";
+    }
+    
+    video.src = videoSrc;
+    video.muted = true;
+    video.playsInline = true;
+
+    // Wait for the video to be ready to seek
+    try {
+      await new Promise((res, rej) => {
+        video.onloadedmetadata = res;
+        video.onerror = () => rej(new Error("Video failed to load in renderer. The format may not be supported."));
+        video.load();
+      });
+    } catch (err) {
+      return reject(err);
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
@@ -31,7 +44,8 @@ export async function renderVideoWithCaptions(
     
     // Add dubbed audio if available
     if (dubbedAudio) {
-        const audioCtx = new AudioContext();
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
         const dest = audioCtx.createMediaStreamDestination();
         const dubbedAudioBuffer = await dubbedAudio.arrayBuffer();
         const decodedDub = await audioCtx.decodeAudioData(dubbedAudioBuffer);
@@ -40,12 +54,17 @@ export async function renderVideoWithCaptions(
         source.connect(dest);
         stream.addTrack(dest.stream.getAudioTracks()[0]);
         source.start(0);
+      } catch (err) {
+        console.warn("Audio processing failed for render", err);
+      }
     }
 
     const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
     const chunks: Blob[] = [];
 
-    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunks, { type: 'video/webm' });
       resolve(blob);
@@ -55,17 +74,17 @@ export async function renderVideoWithCaptions(
 
     const duration = video.duration;
     const fps = 30;
-    const totalFrames = duration * fps;
+    const totalFrames = Math.floor(duration * fps);
     let currentFrame = 0;
 
     const drawFrame = async () => {
       if (signal.aborted) {
-        mediaRecorder.stop();
+        if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         return;
       }
 
-      if (video.currentTime >= duration) {
-        mediaRecorder.stop();
+      if (currentFrame >= totalFrames) {
+        if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         return;
       }
 
@@ -83,19 +102,31 @@ export async function renderVideoWithCaptions(
       const activeCaption = captions.find(c => time >= c.start && time <= c.end);
       
       if (activeCaption) {
-        ctx.font = `${Math.floor(canvas.height * 0.05)}px sans-serif`;
+        const fontSize = Math.floor(canvas.height * 0.05);
+        ctx.font = `bold ${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        
+        const padding = fontSize * 0.5;
+        const x = canvas.width / 2;
+        const y = canvas.height * 0.9;
+
+        // Text background/shadow
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 15;
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = 'black';
+        ctx.strokeText(activeCaption.text, x, y);
+        
+        ctx.shadowBlur = 0;
         ctx.fillStyle = 'white';
-        ctx.shadowColor = 'black';
-        ctx.shadowBlur = 10;
-        ctx.lineWidth = 4;
-        ctx.strokeText(activeCaption.text, canvas.width / 2, canvas.height * 0.85);
-        ctx.fillText(activeCaption.text, canvas.width / 2, canvas.height * 0.85);
+        ctx.fillText(activeCaption.text, x, y);
       }
 
       currentFrame++;
-      onProgress(currentFrame / totalFrames);
+      onProgress(Math.min(1, currentFrame / totalFrames));
       
+      // Use requestAnimationFrame for smoother capture pacing
       requestAnimationFrame(drawFrame);
     };
 

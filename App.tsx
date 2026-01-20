@@ -28,17 +28,29 @@ function App() {
   const processAbortControllerRef = useRef<AbortController | null>(null);
   const dubPreviewAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Cleanup object URLs
+  // Manage Video Blob URL Lifecycle
   useEffect(() => {
+    const currentSrc = videoSrc;
     return () => {
-      if (dubbedAudioUrl) URL.revokeObjectURL(dubbedAudioUrl);
+      if (currentSrc && currentSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(currentSrc);
+      }
+    };
+  }, [videoSrc]);
+
+  // Manage Dub Audio Blob URL Lifecycle
+  useEffect(() => {
+    const currentDubUrl = dubbedAudioUrl;
+    return () => {
+      if (currentDubUrl && currentDubUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(currentDubUrl);
+      }
     };
   }, [dubbedAudioUrl]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (videoSrc) URL.revokeObjectURL(videoSrc);
       const url = URL.createObjectURL(file);
       setVideoSrc(url);
       setVideoFile(file);
@@ -50,6 +62,8 @@ function App() {
       setDubbedAudioUrl(null);
       setUseDubbing(false);
     }
+    // Reset input so the same file can be uploaded again if needed
+    if (event.target) event.target.value = '';
   };
 
   const handleStopProcessing = () => {
@@ -149,7 +163,7 @@ function App() {
       setIsDubPreviewPlaying(false);
     } else {
       dubPreviewAudioRef.current.currentTime = 0;
-      dubPreviewAudioRef.current.play();
+      dubPreviewAudioRef.current.play().catch(console.error);
       setIsDubPreviewPlaying(true);
     }
   };
