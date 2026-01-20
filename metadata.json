@@ -1,0 +1,7 @@
+{
+  "name": "AHA Studio - AI Video Architect",
+  "description": "A high-performance video editor powered by Gemini that provides instant transcription, multi-language translation, and AI-driven dubbing directly in your browser.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
