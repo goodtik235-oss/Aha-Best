@@ -6,8 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AHA Studio | AI Video Architect</title>
     <meta name="description" content="Professional-grade AI video tools: Transcription, Translation, and Dubbing.">
+    
+    <!-- Utilities & Styles -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Babel Standalone for TSX/JSX compilation in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <style>
         body { 
           font-family: 'Inter', sans-serif; 
@@ -19,14 +25,20 @@
         ::-webkit-scrollbar-thumb:hover { background: #334155; }
         .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); }
     </style>
+
     <script>
-      // Global shim for process.env used by SDKs and libraries
+      /**
+       * Netlify Environment Variable Bridge
+       * The placeholder below is replaced by netlify.toml during build.
+       */
       window.process = { 
         env: { 
-          NODE_ENV: 'production'
+          NODE_ENV: 'production',
+          API_KEY: '__API_KEY_PLACEHOLDER__'
         } 
       };
     </script>
+
     <script type="importmap">
 {
   "imports": {
@@ -44,7 +56,16 @@
 </head>
 <body class="text-slate-100 antialiased overflow-hidden">
     <div id="root"></div>
-    <!-- Explicit entry point for the React application -->
-    <script type="module" src="index.tsx"></script>
+
+    <!-- 
+      We use type="text/babel" with data-type="module" so Babel transforms 
+      the file and handles imports/exports as standard ES modules.
+    -->
+    <script 
+      type="text/babel" 
+      data-type="module" 
+      data-presets="react,typescript" 
+      src="index.tsx">
+    </script>
 </body>
 </html>
